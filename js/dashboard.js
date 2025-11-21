@@ -2,6 +2,8 @@
 let financeSystemInitialized = false;
 let doadoresSystemInitialized = false;
 let beneficiariosSystemInitialized = false;
+let categoriasSystemInitialized = false;
+let projetosSystemInitialized = false;
 
 document.addEventListener('DOMContentLoaded', function() {
     // Navegação entre páginas
@@ -483,9 +485,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const page = pages[pageId];
         if (page && contentArea) {
             // Carrega CSS da página se necessário
-            if (pageId !== 'categorias' && pageId !== 'projetos') {
-                loadPageCSS(pageId);
-            }
+            loadPageCSS(pageId);
             
             // Obtém conteúdo da página
             const content = typeof page.getContent === 'function' ? page.getContent() : (page.content || '');
@@ -521,6 +521,22 @@ document.addEventListener('DOMContentLoaded', function() {
                     initBeneficiariosSystem();
                 }, 200);
             }
+            
+            // Reinicializa sistema de categorias se for a página de categorias
+            if (pageId === 'categorias') {
+                categoriasSystemInitialized = false;
+                setTimeout(() => {
+                    initCategoriasSystem();
+                }, 200);
+            }
+            
+            // Reinicializa sistema de projetos se for a página de projetos
+            if (pageId === 'projetos') {
+                projetosSystemInitialized = false;
+                setTimeout(() => {
+                    initProjetosSystem();
+                }, 200);
+            }
         }
     }
 
@@ -531,7 +547,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function initFinanceFeatures() {
         // Verifica se os elementos financeiros existem
         setTimeout(() => {
-            if (document.getElementById('open-session-modal-btn')) {
+            if (document.getElementById('open-transaction-modal-btn')) {
                 initFinanceSystem();
             }
         }, 200);
@@ -544,7 +560,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Verifica se algum nó adicionado contém elementos financeiros
                 mutation.addedNodes.forEach(node => {
                     if (node.nodeType === 1) { // Element node
-                        if (node.querySelector && node.querySelector('#open-session-modal-btn')) {
+                        if (node.querySelector && node.querySelector('#open-transaction-modal-btn')) {
                             initFinanceFeatures();
                         }
                     }
@@ -588,44 +604,59 @@ document.addEventListener('DOMContentLoaded', function() {
     initDoadoresFeatures();
 });
 
+// Funções auxiliares para categorias e projetos
+function initCategories() {
+    // Categorias serão criadas pelo usuário através da tela de categorias
+    if (!localStorage.getItem('categorias')) {
+        localStorage.setItem('categorias', JSON.stringify([]));
+    }
+}
+
+function initProjects() {
+    if (!localStorage.getItem('projetos')) {
+        localStorage.setItem('projetos', JSON.stringify([]));
+    }
+}
+
+function getCategories() {
+    return JSON.parse(localStorage.getItem('categorias') || '[]');
+}
+
+function getProjects() {
+    return JSON.parse(localStorage.getItem('projetos') || '[]');
+}
+
+function getDoadores() {
+    return JSON.parse(localStorage.getItem('doadores') || '[]');
+}
+
+function getBeneficiarios() {
+    return JSON.parse(localStorage.getItem('beneficiarios') || '[]');
+}
+
 // Sistema Financeiro
 function initFinanceSystem() {
     // Evita múltiplas inicializações
     if (financeSystemInitialized) return;
     
-    const checkBtn = document.getElementById('open-session-modal-btn');
+    const checkBtn = document.getElementById('open-transaction-modal-btn');
     if (!checkBtn) return;
     
     financeSystemInitialized = true;
     
-    let sessions = {
-        'geral': {
-            id: 'geral',
-            name: 'Geral',
-            description: 'Controle financeiro geral',
-            budget: null,
-            transactions: []
-        }
-    };
-    let currentSession = 'geral';
+    // Inicializar categorias e projetos se não existirem
+    initCategories();
+    initProjects();
+    
+    // Carregar transações do localStorage
+    let transactions = JSON.parse(localStorage.getItem('transacoes') || '[]');
     let currentPeriod = 'mensal';
     let editingId = null;
-    let editingSessionId = null;
     let currentAttachments = [];
     const colors = ['#e91e63', '#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#84cc16'];
 
     // Elementos
-    const openSessionModalBtn = document.getElementById('open-session-modal-btn');
     const openTransactionModalBtn = document.getElementById('open-transaction-modal-btn');
-    const sessionModal = document.getElementById('session-modal');
-    const closeSessionModalBtn = document.getElementById('close-session-modal-btn');
-    const cancelSessionBtn = document.getElementById('cancel-session-btn');
-    const sessionForm = document.getElementById('session-form');
-    const sessionModalTitle = document.getElementById('session-modal-title');
-    const saveSessionBtn = document.getElementById('save-session-btn');
-    const sessionNameInput = document.getElementById('session-name');
-    const sessionDescInput = document.getElementById('session-description');
-    const sessionBudgetInput = document.getElementById('session-budget');
     const transactionModal = document.getElementById('transaction-modal');
     const closeTransactionModalBtn = document.getElementById('close-transaction-modal-btn');
     const cancelTransactionBtn = document.getElementById('cancel-transaction-btn');
@@ -633,84 +664,93 @@ function initFinanceSystem() {
     const transactionModalTitle = document.getElementById('modal-title');
     const addAttachmentBtn = document.getElementById('add-attachment-btn');
     const attachmentsContainer = document.getElementById('attachments-container');
+    const detailsModal = document.getElementById('transaction-details-modal');
+    const detailsContent = document.getElementById('transaction-details-content');
+    const closeDetailsModalBtn = document.getElementById('close-details-modal-btn');
+    const closeDetailsBtn = document.getElementById('close-details-btn');
+    const tituloInput = document.getElementById('titulo');
     const tipoInput = document.getElementById('tipo');
-    const descricaoInput = document.getElementById('descricao');
+    const doadorInput = document.getElementById('doador');
+    const beneficiarioInput = document.getElementById('beneficiario');
     const categoriaInput = document.getElementById('categoria');
+    const projetoInput = document.getElementById('projeto');
     const valorInput = document.getElementById('valor');
-    const instituicaoInput = document.getElementById('instituicao');
-    const metodoInput = document.getElementById('metodo');
+    const descricaoInput = document.getElementById('descricao');
     const dataInput = document.getElementById('data');
-    const horaInput = document.getElementById('hora');
-    const sessionsContainer = document.getElementById('sessions-container');
-    const currentSessionName = document.getElementById('current-session-name');
-    const editSessionBtn = document.getElementById('edit-session-btn');
-    const deleteSessionBtn = document.getElementById('delete-session-btn');
     const totalEntradasEl = document.getElementById('total-entradas');
     const totalSaidasEl = document.getElementById('total-saidas');
     const saldoTotalEl = document.getElementById('saldo-total');
-    const budgetInfoEl = document.getElementById('budget-info');
-    const budgetAmountEl = document.getElementById('budget-amount');
-    const budgetProgressEl = document.getElementById('budget-progress');
     const transactionsListEl = document.getElementById('transactions-list');
     const pieChartEl = document.getElementById('pie-chart');
     const chartLegendEl = document.getElementById('chart-legend');
 
+    // Carregar opções nos selects
+    window.loadSelectOptions = function() {
+        // Carregar doadores
+        const doadores = getDoadores();
+        doadorInput.innerHTML = '<option value="">Selecione um doador (opcional)</option>';
+        doadores.forEach(d => {
+            doadorInput.innerHTML += `<option value="${d.id}">${d.nome}</option>`;
+        });
+
+        // Carregar beneficiários
+        const beneficiarios = getBeneficiarios();
+        beneficiarioInput.innerHTML = '<option value="">Selecione um beneficiário (opcional)</option>';
+        beneficiarios.forEach(b => {
+            beneficiarioInput.innerHTML += `<option value="${b.id}">${b.nome}</option>`;
+        });
+
+        // Carregar categorias
+        const categorias = getCategories();
+        categoriaInput.innerHTML = '<option value="">Selecione uma categoria</option>';
+        categorias.forEach(c => {
+            categoriaInput.innerHTML += `<option value="${c.id}">${c.nome}</option>`;
+        });
+
+        // Carregar projetos
+        const projetos = getProjects();
+        projetoInput.innerHTML = '<option value="">Selecione um projeto (opcional)</option>';
+        projetos.forEach(p => {
+            projetoInput.innerHTML += `<option value="${p.id}">${p.nome}</option>`;
+        });
+    }
+
     // Event Listeners
-    openSessionModalBtn?.addEventListener('click', () => openSessionModal());
-    closeSessionModalBtn?.addEventListener('click', closeSessionModal);
-    cancelSessionBtn?.addEventListener('click', closeSessionModal);
-    sessionForm?.addEventListener('submit', saveSession);
     openTransactionModalBtn?.addEventListener('click', () => openTransactionModal());
     closeTransactionModalBtn?.addEventListener('click', closeTransactionModal);
     cancelTransactionBtn?.addEventListener('click', closeTransactionModal);
     transactionForm?.addEventListener('submit', saveTransaction);
     addAttachmentBtn?.addEventListener('click', addAttachment);
-
-    // Funções Modal Sessão
-    function openSessionModal(sessionId = null) {
-        editingSessionId = sessionId;
-        if (editingSessionId) {
-            const session = sessions[editingSessionId];
-            sessionModalTitle.textContent = 'Editar Sessão';
-            saveSessionBtn.textContent = 'Salvar Alterações';
-            sessionNameInput.value = session.name;
-            sessionDescInput.value = session.description || '';
-            sessionBudgetInput.value = session.budget || '';
-        } else {
-            sessionModalTitle.textContent = 'Nova Sessão';
-            saveSessionBtn.textContent = 'Criar Sessão';
-            sessionForm.reset();
-        }
-        sessionModal.classList.remove('hidden');
-    }
-
-    function closeSessionModal() {
-        sessionModal.classList.add('hidden');
-        editingSessionId = null;
-    }
+    closeDetailsModalBtn?.addEventListener('click', closeDetailsModal);
+    closeDetailsBtn?.addEventListener('click', closeDetailsModal);
 
     // Funções Modal Transação
     function openTransactionModal(transactionId = null) {
         editingId = transactionId;
         currentAttachments = [];
         
+        // Recarregar opções dos selects
+        loadSelectOptions();
+        
         if (editingId) {
-            const t = sessions[currentSession].transactions.find(t => t.id === editingId);
-            transactionModalTitle.textContent = 'Editar Transação';
-            tipoInput.value = t.tipo;
-            descricaoInput.value = t.descricao;
-            categoriaInput.value = t.categoria;
-            valorInput.value = t.valor;
-            instituicaoInput.value = t.instituicao || '';
-            metodoInput.value = t.metodo || '';
-            dataInput.value = t.data;
-            horaInput.value = t.hora || '';
-            currentAttachments = t.attachments || [];
+            const t = transactions.find(t => t.id === editingId);
+            if (t) {
+                transactionModalTitle.textContent = 'Editar Transação';
+                tituloInput.value = t.titulo || '';
+                tipoInput.value = t.tipo;
+                doadorInput.value = t.doadorId || '';
+                beneficiarioInput.value = t.beneficiarioId || '';
+                categoriaInput.value = t.categoriaId || '';
+                projetoInput.value = t.projetoId || '';
+                valorInput.value = t.valor || '';
+                descricaoInput.value = t.descricao || '';
+                dataInput.value = t.data || '';
+                currentAttachments = t.anexos || [];
+            }
         } else {
             transactionModalTitle.textContent = 'Adicionar Transação';
             transactionForm.reset();
             dataInput.value = new Date().toISOString().split('T')[0];
-            horaInput.value = new Date().toTimeString().slice(0, 5);
         }
         
         updateAttachmentsList();
@@ -724,96 +764,34 @@ function initFinanceSystem() {
         attachmentsContainer.innerHTML = '';
     }
 
-    // Funções Sessão
-    function saveSession(event) {
-        event.preventDefault();
-        const name = sessionNameInput.value;
-        const description = sessionDescInput.value;
-        const budget = parseFloat(sessionBudgetInput.value) || null;
-
-        if (editingSessionId) {
-            sessions[editingSessionId].name = name;
-            sessions[editingSessionId].description = description;
-            sessions[editingSessionId].budget = budget;
-        } else {
-            const id = 'session-' + new Date().getTime();
-            sessions[id] = { id, name, description, budget, transactions: [] };
-            selectSession(id);
-        }
-        
-        updateSessionButtons();
-        updateDisplay();
-        closeSessionModal();
-    }
-
-    window.selectSession = (sessionId) => {
-        currentSession = sessionId;
-        document.querySelectorAll('.btn-session').forEach(btn => btn.classList.remove('active'));
-        const btn = document.getElementById(`session-${sessionId}`);
-        if (btn) btn.classList.add('active');
-        currentSessionName.textContent = sessions[sessionId].name;
-        
-        if (sessionId === 'geral') {
-            editSessionBtn.classList.add('hidden');
-            deleteSessionBtn.classList.add('hidden');
-        } else {
-            editSessionBtn.classList.remove('hidden');
-            deleteSessionBtn.classList.remove('hidden');
-        }
-        updateDisplay();
-    }
-
-    window.editCurrentSession = () => {
-        if (currentSession !== 'geral') {
-            openSessionModal(currentSession);
-        }
-    }
-
-    window.deleteCurrentSession = () => {
-        if (currentSession === 'geral') return;
-        if (confirm(`Tem certeza que deseja excluir a sessão "${sessions[currentSession].name}"? Todas as transações serão perdidas.`)) {
-            delete sessions[currentSession];
-            selectSession('geral');
-            updateSessionButtons();
-        }
-    }
-
-    function updateSessionButtons() {
-        sessionsContainer.innerHTML = '';
-        Object.values(sessions).forEach(session => {
-            const button = document.createElement('button');
-            button.id = `session-${session.id}`;
-            button.textContent = session.name;
-            button.className = 'btn-session';
-            if (session.id === currentSession) button.classList.add('active');
-            button.onclick = () => selectSession(session.id);
-            sessionsContainer.appendChild(button);
-        });
-    }
-
     // Funções Transação
     function saveTransaction(event) {
         event.preventDefault();
         const transaction = {
             id: editingId ? editingId : new Date().getTime().toString(),
+            titulo: tituloInput.value.trim(),
             tipo: tipoInput.value,
-            descricao: descricaoInput.value,
-            categoria: categoriaInput.value,
+            doadorId: doadorInput.value || null,
+            beneficiarioId: beneficiarioInput.value || null,
+            categoriaId: categoriaInput.value,
+            projetoId: projetoInput.value || null,
             valor: parseFloat(valorInput.value),
-            instituicao: instituicaoInput.value,
-            metodo: metodoInput.value,
+            descricao: descricaoInput.value.trim() || '',
             data: dataInput.value,
-            hora: horaInput.value,
-            attachments: [...currentAttachments]
+            anexos: [...currentAttachments]
         };
         
-        const currentTransactions = sessions[currentSession].transactions;
         if (editingId) {
-            const index = currentTransactions.findIndex(t => t.id === editingId);
-            currentTransactions[index] = transaction;
+            const index = transactions.findIndex(t => t.id === editingId);
+            if (index !== -1) {
+                transactions[index] = transaction;
+            }
         } else {
-            currentTransactions.push(transaction);
+            transactions.push(transaction);
         }
+        
+        // Salvar no localStorage
+        localStorage.setItem('transacoes', JSON.stringify(transactions));
         
         closeTransactionModal();
         updateDisplay();
@@ -825,7 +803,8 @@ function initFinanceSystem() {
 
     window.deleteTransaction = (id) => {
         if (confirm('Tem certeza que deseja excluir esta transação?')) {
-            sessions[currentSession].transactions = sessions[currentSession].transactions.filter(t => t.id !== id);
+            transactions = transactions.filter(t => t.id !== id);
+            localStorage.setItem('transacoes', JSON.stringify(transactions));
             updateDisplay();
         }
     }
@@ -867,6 +846,120 @@ function initFinanceSystem() {
         updateAttachmentsList();
     }
 
+    // Função para exibir detalhes da transação
+    window.showTransactionDetails = function(transactionId) {
+        const transaction = transactions.find(t => t.id === transactionId);
+        if (!transaction) return;
+
+        const categorias = getCategories();
+        const projetos = getProjects();
+        const doadores = getDoadores();
+        const beneficiarios = getBeneficiarios();
+
+        // Buscar nomes das FKs
+        const categoria = categorias.find(c => c.id === transaction.categoriaId);
+        const projeto = projetos.find(p => p.id === transaction.projetoId);
+        const doador = doadores.find(d => d.id === transaction.doadorId);
+        const beneficiario = beneficiarios.find(b => b.id === transaction.beneficiarioId);
+
+        const isEntrada = transaction.tipo === 'entrada';
+        const tipoText = isEntrada ? 'Entrada' : 'Saída';
+        const tipoClass = isEntrada ? 'text-green' : 'text-red';
+
+        let detailsHTML = `
+            <div class="transaction-details-view">
+                <div class="detail-section">
+                    <h4>Título</h4>
+                    <p>${transaction.titulo || 'Sem título'}</p>
+                </div>
+                <div class="detail-section">
+                    <h4>Tipo</h4>
+                    <p class="${tipoClass}"><strong>${tipoText}</strong></p>
+                </div>
+                <div class="detail-section">
+                    <h4>Valor</h4>
+                    <p class="${tipoClass}"><strong>${isEntrada ? '+' : '-'} ${formatCurrency(transaction.valor)}</strong></p>
+                </div>
+                <div class="detail-section">
+                    <h4>Data</h4>
+                    <p>${formatDateTime(transaction.data)}</p>
+                </div>
+                ${categoria ? `
+                <div class="detail-section">
+                    <h4>Categoria</h4>
+                    <p>${categoria.nome}</p>
+                </div>
+                ` : ''}
+                ${projeto ? `
+                <div class="detail-section">
+                    <h4>Projeto</h4>
+                    <p>${projeto.nome}</p>
+                </div>
+                ` : ''}
+                ${doador ? `
+                <div class="detail-section">
+                    <h4>Doador</h4>
+                    <p>${doador.nome}</p>
+                </div>
+                ` : ''}
+                ${beneficiario ? `
+                <div class="detail-section">
+                    <h4>Beneficiário</h4>
+                    <p>${beneficiario.nome}</p>
+                </div>
+                ` : ''}
+                ${transaction.descricao ? `
+                <div class="detail-section">
+                    <h4>Descrição</h4>
+                    <p>${transaction.descricao}</p>
+                </div>
+                ` : ''}
+        `;
+
+        // Anexos
+        if (transaction.anexos && transaction.anexos.length > 0) {
+            detailsHTML += `
+                <div class="detail-section">
+                    <h4>Anexos (${transaction.anexos.length})</h4>
+                    <div class="details-attachments-list">
+            `;
+            transaction.anexos.forEach((anexo, index) => {
+                const fileIcon = anexo.type && anexo.type.startsWith('image/') 
+                    ? '<i class="fas fa-image"></i>' 
+                    : '<i class="fas fa-file-pdf"></i>';
+                detailsHTML += `
+                    <div class="details-attachment-item">
+                        <span class="attachment-icon">${fileIcon}</span>
+                        <span class="attachment-name">${anexo.name}</span>
+                        <a href="${anexo.dataUrl}" download="${anexo.name}" class="btn btn-outline btn-small">
+                            <i class="fas fa-download"></i> Baixar
+                        </a>
+                    </div>
+                `;
+            });
+            detailsHTML += `
+                    </div>
+                </div>
+            `;
+        } else {
+            detailsHTML += `
+                <div class="detail-section">
+                    <h4>Anexos</h4>
+                    <p class="text-muted">Nenhum anexo</p>
+                </div>
+            `;
+        }
+
+        detailsHTML += `</div>`;
+        detailsContent.innerHTML = detailsHTML;
+        detailsModal.classList.remove('hidden');
+    }
+
+    function closeDetailsModal() {
+        detailsModal.classList.add('hidden');
+        detailsContent.innerHTML = '';
+    }
+
     // Funções Visualização
     window.changePeriod = (period) => {
         currentPeriod = period;
@@ -880,9 +973,8 @@ function initFinanceSystem() {
         const now = new Date();
         const currentYear = now.getFullYear();
         const currentMonth = now.getMonth();
-        const sessionTransactions = sessions[currentSession].transactions;
         
-        return sessionTransactions.filter(t => {
+        return transactions.filter(t => {
             const transactionDate = new Date(t.data + 'T00:00:00');
             const transactionYear = transactionDate.getFullYear();
             const transactionMonth = transactionDate.getMonth();
@@ -918,23 +1010,6 @@ function initFinanceSystem() {
         totalSaidasEl.textContent = formatCurrency(saidas);
         saldoTotalEl.textContent = formatCurrency(saldo);
         saldoTotalEl.className = saldo >= 0 ? 'text-green' : 'text-red';
-
-        const currentSessionData = sessions[currentSession];
-        if (currentSessionData.budget) {
-            budgetInfoEl.classList.remove('hidden');
-            budgetAmountEl.textContent = formatCurrency(currentSessionData.budget);
-            const spentPercentage = Math.min((saidas / currentSessionData.budget) * 100, 100);
-            budgetProgressEl.style.width = `${spentPercentage}%`;
-            if (spentPercentage > 90) {
-                budgetProgressEl.style.backgroundColor = '#ef4444';
-            } else if (spentPercentage > 75) {
-                budgetProgressEl.style.backgroundColor = '#f59e0b';
-            } else {
-                budgetProgressEl.style.backgroundColor = '#e91e63';
-            }
-        } else {
-            budgetInfoEl.classList.add('hidden');
-        }
     }
 
     function updateTransactionsList(filteredTransactions) {
@@ -951,10 +1026,15 @@ function initFinanceSystem() {
         }
         
         const sorted = filteredTransactions.sort((a, b) => {
-            const dateA = new Date(a.data + (a.hora ? 'T' + a.hora : 'T00:00:00'));
-            const dateB = new Date(b.data + (b.hora ? 'T' + b.hora : 'T00:00:00'));
+            const dateA = new Date(a.data + 'T00:00:00');
+            const dateB = new Date(b.data + 'T00:00:00');
             return dateB - dateA;
         });
+        
+        const categorias = getCategories();
+        const projetos = getProjects();
+        const doadores = getDoadores();
+        const beneficiarios = getBeneficiarios();
         
         sorted.forEach(t => {
             const isEntrada = t.tipo === 'entrada';
@@ -963,23 +1043,43 @@ function initFinanceSystem() {
             const amountClass = isEntrada ? 'text-green' : 'text-red';
             const sign = isEntrada ? '+' : '-';
             
+            // Buscar nomes das FKs
+            const categoria = categorias.find(c => c.id === t.categoriaId);
+            const projeto = projetos.find(p => p.id === t.projetoId);
+            const doador = doadores.find(d => d.id === t.doadorId);
+            const beneficiario = beneficiarios.find(b => b.id === t.beneficiarioId);
+            
             const item = document.createElement('div');
             item.className = 'transaction-item';
+            item.style.cursor = 'pointer';
+            item.onclick = (e) => {
+                // Evitar abrir detalhes ao clicar nos botões de ação
+                if (!e.target.closest('.transaction-actions')) {
+                    showTransactionDetails(t.id);
+                }
+            };
+            
+            let infoText = '';
+            if (categoria) infoText += categoria.nome;
+            if (projeto) infoText += ` • ${projeto.nome}`;
+            if (doador) infoText += ` • Doador: ${doador.nome}`;
+            if (beneficiario) infoText += ` • Beneficiário: ${beneficiario.nome}`;
+            
             item.innerHTML = `
                 <div class="transaction-details">
                     <div class="transaction-icon ${iconClass}">${iconSymbol}</div>
                     <div class="transaction-info">
-                        <p>${t.descricao}</p>
-                        <small>${t.categoria} • ${formatDateTime(t.data, t.hora)}</small>
-                        ${t.instituicao ? `<small>${t.instituicao} • ${t.metodo}</small>` : ''}
-                        ${t.attachments && t.attachments.length > 0 ? `<small class="attachment-info">${t.attachments.length} anexo(s)</small>` : ''}
+                        <p>${t.titulo || 'Sem título'}</p>
+                        <small>${infoText || 'Sem informações'} • ${formatDateTime(t.data)}</small>
+                        ${t.descricao ? `<small>${t.descricao}</small>` : ''}
+                        ${t.anexos && t.anexos.length > 0 ? `<small class="attachment-info">${t.anexos.length} anexo(s)</small>` : ''}
                     </div>
                 </div>
                 <div class="transaction-amount">
                     <strong class="${amountClass}">${sign} ${formatCurrency(t.valor)}</strong>
                     <div class="transaction-actions">
-                        <button onclick="editTransaction('${t.id}')">Editar</button>
-                        <button class="btn-delete" onclick="deleteTransaction('${t.id}')">Excluir</button>
+                        <button onclick="event.stopPropagation(); editTransaction('${t.id}')">Editar</button>
+                        <button class="btn-delete" onclick="event.stopPropagation(); deleteTransaction('${t.id}')">Excluir</button>
                     </div>
                 </div>
             `;
@@ -998,8 +1098,11 @@ function initFinanceSystem() {
         }
 
         const totalSaidas = saidas.reduce((sum, t) => sum + t.valor, 0);
+        const categorias = getCategories();
         const categories = saidas.reduce((acc, t) => {
-            acc[t.categoria] = (acc[t.categoria] || 0) + t.valor;
+            const categoria = categorias.find(c => c.id === t.categoriaId);
+            const categoriaNome = categoria ? categoria.nome : 'Sem categoria';
+            acc[categoriaNome] = (acc[categoriaNome] || 0) + t.valor;
             return acc;
         }, {});
 
@@ -1060,18 +1163,25 @@ function initFinanceSystem() {
         return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     }
 
-    function formatDateTime(dateStr, timeStr) {
+    function formatDateTime(dateStr) {
         const date = new Date(dateStr + 'T00:00:00');
-        const formattedDate = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-        return timeStr ? `${formattedDate} às ${timeStr}` : formattedDate;
+        return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+
+    // Fechar modal ao clicar no backdrop
+    if (detailsModal) {
+        detailsModal.addEventListener('click', (e) => {
+            if (e.target === detailsModal) {
+                closeDetailsModal();
+            }
+        });
     }
 
     // Inicialização
-    updateSessionButtons();
+    loadSelectOptions();
     updateDisplay();
     if (dataInput) {
         dataInput.value = new Date().toISOString().split('T')[0];
-        horaInput.value = new Date().toTimeString().slice(0, 5);
     }
 }
 
@@ -1643,5 +1753,342 @@ function initBeneficiariosSystem() {
     
     // Inicialização
     updateBeneficiariosList();
+}
+
+// Sistema de Categorias
+function initCategoriasSystem() {
+    if (categoriasSystemInitialized) return;
+    
+    const openCategoriaModalBtn = document.getElementById('open-categoria-modal-btn');
+    if (!openCategoriaModalBtn) return;
+    
+    categoriasSystemInitialized = true;
+    
+    // Carregar categorias do localStorage
+    let categorias = JSON.parse(localStorage.getItem('categorias') || '[]');
+    
+    let editingCategoriaId = null;
+    
+    // Elementos
+    const categoriaModal = document.getElementById('categoria-modal');
+    const closeCategoriaModalBtn = document.getElementById('close-categoria-modal-btn');
+    const cancelCategoriaBtn = document.getElementById('cancel-categoria-btn');
+    const categoriaForm = document.getElementById('categoria-form');
+    const categoriaModalTitle = document.getElementById('categoria-modal-title');
+    const categoriasListContainer = document.getElementById('categorias-list-container');
+    
+    // Campos do formulário
+    const nomeInput = document.getElementById('categoria-nome');
+    const descricaoInput = document.getElementById('categoria-descricao');
+    
+    // Funções do Modal
+    function openCategoriaModal(categoriaId = null) {
+        editingCategoriaId = categoriaId;
+        
+        if (editingCategoriaId) {
+            const categoria = categorias.find(c => c.id === editingCategoriaId);
+            if (categoria) {
+                categoriaModalTitle.textContent = 'Editar Categoria';
+                nomeInput.value = categoria.nome || '';
+                descricaoInput.value = categoria.descricao || '';
+            }
+        } else {
+            categoriaModalTitle.textContent = 'Adicionar Categoria';
+            categoriaForm.reset();
+        }
+        
+        categoriaModal.classList.remove('hidden');
+    }
+    
+    function closeCategoriaModal() {
+        categoriaModal.classList.add('hidden');
+        editingCategoriaId = null;
+        categoriaForm.reset();
+    }
+    
+    // CRUD
+    function saveCategoria(event) {
+        event.preventDefault();
+        
+        const categoria = {
+            id: editingCategoriaId || 'cat-' + new Date().getTime(),
+            nome: nomeInput.value.trim(),
+            descricao: descricaoInput.value.trim() || ''
+        };
+        
+        // Validação básica
+        if (!categoria.nome) {
+            alert('Por favor, preencha o nome da categoria.');
+            return;
+        }
+        
+        if (editingCategoriaId) {
+            const index = categorias.findIndex(c => c.id === editingCategoriaId);
+            if (index !== -1) {
+                categorias[index] = categoria;
+            }
+        } else {
+            categorias.push(categoria);
+        }
+        
+        localStorage.setItem('categorias', JSON.stringify(categorias));
+        updateCategoriasList();
+        closeCategoriaModal();
+        
+        // Recarregar select de categorias no formulário de transações se estiver aberto
+        if (window.loadSelectOptions) {
+            window.loadSelectOptions();
+        }
+    }
+    
+    function deleteCategoriaLocal(id) {
+        // Verificar se a categoria está sendo usada em transações
+        const transacoes = JSON.parse(localStorage.getItem('transacoes') || '[]');
+        const categoriaEmUso = transacoes.some(t => t.categoriaId === id);
+        
+        if (categoriaEmUso) {
+            alert('Esta categoria não pode ser excluída pois está sendo usada em transações.');
+            return;
+        }
+        
+        if (confirm('Tem certeza que deseja excluir esta categoria?')) {
+            categorias = categorias.filter(c => c.id !== id);
+            localStorage.setItem('categorias', JSON.stringify(categorias));
+            updateCategoriasList();
+        }
+    }
+    
+    function updateCategoriasList() {
+        categoriasListContainer.innerHTML = '';
+        
+        if (categorias.length === 0) {
+            categoriasListContainer.innerHTML = `
+                <div class="list-empty-state">
+                    <p>Nenhuma categoria cadastrada</p>
+                    <p>Adicione sua primeira categoria</p>
+                </div>
+            `;
+            return;
+        }
+        
+        categorias.forEach(categoria => {
+            const card = document.createElement('div');
+            card.className = 'categoria-card';
+            card.innerHTML = `
+                <div class="categoria-card-header">
+                    <div class="categoria-card-title">
+                        <h3>${categoria.nome}</h3>
+                    </div>
+                    <div class="categoria-card-actions">
+                        <button class="btn-icon" onclick="editCategoria('${categoria.id}')" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-icon btn-icon-danger" onclick="deleteCategoria('${categoria.id}')" title="Excluir">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="categoria-card-body">
+                    ${categoria.descricao ? `
+                    <div class="categoria-info-item">
+                        <i class="fas fa-info-circle"></i>
+                        <span class="categoria-descricao">${categoria.descricao}</span>
+                    </div>
+                    ` : `
+                    <div class="categoria-info-item">
+                        <span class="categoria-descricao" style="color: #9ca3af; font-style: italic;">Sem descrição</span>
+                    </div>
+                    `}
+                </div>
+            `;
+            categoriasListContainer.appendChild(card);
+        });
+    }
+    
+    // Funções globais para os botões
+    window.editCategoria = (id) => {
+        openCategoriaModal(id);
+    };
+    
+    window.deleteCategoria = (id) => {
+        deleteCategoriaLocal(id);
+    };
+    
+    // Event listeners
+    openCategoriaModalBtn?.addEventListener('click', () => openCategoriaModal());
+    closeCategoriaModalBtn?.addEventListener('click', closeCategoriaModal);
+    cancelCategoriaBtn?.addEventListener('click', closeCategoriaModal);
+    categoriaForm?.addEventListener('submit', saveCategoria);
+    
+    // Inicialização
+    updateCategoriasList();
+}
+
+// Sistema de Projetos
+function initProjetosSystem() {
+    if (projetosSystemInitialized) return;
+    
+    const openProjetoModalBtn = document.getElementById('open-projeto-modal-btn');
+    if (!openProjetoModalBtn) return;
+    
+    projetosSystemInitialized = true;
+    
+    // Carregar projetos do localStorage
+    let projetos = JSON.parse(localStorage.getItem('projetos') || '[]');
+    let editingProjetoId = null;
+    
+    // Elementos
+    const projetoModal = document.getElementById('projeto-modal');
+    const closeProjetoModalBtn = document.getElementById('close-projeto-modal-btn');
+    const cancelProjetoBtn = document.getElementById('cancel-projeto-btn');
+    const projetoForm = document.getElementById('projeto-form');
+    const projetoModalTitle = document.getElementById('projeto-modal-title');
+    const projetosListContainer = document.getElementById('projetos-list-container');
+    
+    // Campos do formulário
+    const nomeInput = document.getElementById('projeto-nome');
+    const descricaoInput = document.getElementById('projeto-descricao');
+    
+    // Funções do Modal
+    function openProjetoModal(projetoId = null) {
+        editingProjetoId = projetoId;
+        
+        if (editingProjetoId) {
+            const projeto = projetos.find(p => p.id === editingProjetoId);
+            if (projeto) {
+                projetoModalTitle.textContent = 'Editar Projeto';
+                nomeInput.value = projeto.nome || '';
+                descricaoInput.value = projeto.descricao || '';
+            }
+        } else {
+            projetoModalTitle.textContent = 'Adicionar Projeto';
+            projetoForm.reset();
+        }
+        
+        projetoModal.classList.remove('hidden');
+    }
+    
+    function closeProjetoModal() {
+        projetoModal.classList.add('hidden');
+        editingProjetoId = null;
+        projetoForm.reset();
+    }
+    
+    // CRUD
+    function saveProjeto(event) {
+        event.preventDefault();
+        
+        const projeto = {
+            id: editingProjetoId || 'proj-' + new Date().getTime(),
+            nome: nomeInput.value.trim(),
+            descricao: descricaoInput.value.trim() || ''
+        };
+        
+        // Validação básica
+        if (!projeto.nome) {
+            alert('Por favor, preencha o nome do projeto.');
+            return;
+        }
+        
+        if (editingProjetoId) {
+            const index = projetos.findIndex(p => p.id === editingProjetoId);
+            if (index !== -1) {
+                projetos[index] = projeto;
+            }
+        } else {
+            projetos.push(projeto);
+        }
+        
+        localStorage.setItem('projetos', JSON.stringify(projetos));
+        updateProjetosList();
+        closeProjetoModal();
+        
+        // Recarregar select de projetos no formulário de transações se estiver aberto
+        if (window.loadSelectOptions) {
+            window.loadSelectOptions();
+        }
+    }
+    
+    function deleteProjetoLocal(id) {
+        // Verificar se o projeto está sendo usado em transações
+        const transacoes = JSON.parse(localStorage.getItem('transacoes') || '[]');
+        const projetoEmUso = transacoes.some(t => t.projetoId === id);
+        
+        if (projetoEmUso) {
+            alert('Este projeto não pode ser excluído pois está sendo usado em transações.');
+            return;
+        }
+        
+        if (confirm('Tem certeza que deseja excluir este projeto?')) {
+            projetos = projetos.filter(p => p.id !== id);
+            localStorage.setItem('projetos', JSON.stringify(projetos));
+            updateProjetosList();
+        }
+    }
+    
+    function updateProjetosList() {
+        projetosListContainer.innerHTML = '';
+        
+        if (projetos.length === 0) {
+            projetosListContainer.innerHTML = `
+                <div class="list-empty-state">
+                    <p>Nenhum projeto cadastrado</p>
+                    <p>Adicione seu primeiro projeto</p>
+                </div>
+            `;
+            return;
+        }
+        
+        projetos.forEach(projeto => {
+            const card = document.createElement('div');
+            card.className = 'projeto-card';
+            card.innerHTML = `
+                <div class="projeto-card-header">
+                    <div class="projeto-card-title">
+                        <h3>${projeto.nome}</h3>
+                    </div>
+                    <div class="projeto-card-actions">
+                        <button class="btn-icon" onclick="editProjeto('${projeto.id}')" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-icon btn-icon-danger" onclick="deleteProjeto('${projeto.id}')" title="Excluir">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="projeto-card-body">
+                    ${projeto.descricao ? `
+                    <div class="projeto-info-item">
+                        <i class="fas fa-info-circle"></i>
+                        <span class="projeto-descricao">${projeto.descricao}</span>
+                    </div>
+                    ` : `
+                    <div class="projeto-info-item">
+                        <span class="projeto-descricao" style="color: #9ca3af; font-style: italic;">Sem descrição</span>
+                    </div>
+                    `}
+                </div>
+            `;
+            projetosListContainer.appendChild(card);
+        });
+    }
+    
+    // Funções globais para os botões
+    window.editProjeto = (id) => {
+        openProjetoModal(id);
+    };
+    
+    window.deleteProjeto = (id) => {
+        deleteProjetoLocal(id);
+    };
+    
+    // Event listeners
+    openProjetoModalBtn?.addEventListener('click', () => openProjetoModal());
+    closeProjetoModalBtn?.addEventListener('click', closeProjetoModal);
+    cancelProjetoBtn?.addEventListener('click', closeProjetoModal);
+    projetoForm?.addEventListener('submit', saveProjeto);
+    
+    // Inicialização
+    updateProjetosList();
 }
 

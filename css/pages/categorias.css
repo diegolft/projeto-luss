@@ -1,0 +1,139 @@
+/* Estilos da Página Categorias */
+
+.categorias-page {
+    width: 100%;
+}
+
+.categorias-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.categorias-title h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1e3a5f;
+    margin-bottom: 8px;
+}
+
+.categorias-title p {
+    color: #6b7280;
+    font-size: 16px;
+}
+
+.categorias-list-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 24px;
+}
+
+.categoria-card {
+    background-color: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 24px;
+    border: 1px solid #f3f4f6;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.categoria-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+}
+
+.categoria-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.categoria-card-title {
+    flex: 1;
+}
+
+.categoria-card-title h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1e3a5f;
+    margin: 0;
+}
+
+.categoria-card-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-icon {
+    background: none;
+    border: none;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+}
+
+.btn-icon:hover {
+    background-color: #f5f5f5;
+    color: #1e3a5f;
+}
+
+.btn-icon-danger:hover {
+    background-color: #fee2e2;
+    color: #ef4444;
+}
+
+.categoria-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.categoria-info-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 14px;
+    color: #4b5563;
+    line-height: 1.5;
+}
+
+.categoria-info-item i {
+    color: #e91e63;
+    width: 20px;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.categoria-info-item span {
+    flex: 1;
+}
+
+.categoria-descricao {
+    color: #6b7280;
+    font-style: italic;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .categorias-list-container {
+        grid-template-columns: 1fr;
+    }
+
+    .categorias-header {
+        flex-direction: column;
+    }
+}
+

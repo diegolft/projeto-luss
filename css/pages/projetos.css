@@ -1,0 +1,139 @@
+/* Estilos da Página Projetos */
+
+.projetos-page {
+    width: 100%;
+}
+
+.projetos-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.projetos-title h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1e3a5f;
+    margin-bottom: 8px;
+}
+
+.projetos-title p {
+    color: #6b7280;
+    font-size: 16px;
+}
+
+.projetos-list-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 24px;
+}
+
+.projeto-card {
+    background-color: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 24px;
+    border: 1px solid #f3f4f6;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.projeto-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+}
+
+.projeto-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.projeto-card-title {
+    flex: 1;
+}
+
+.projeto-card-title h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1e3a5f;
+    margin: 0;
+}
+
+.projeto-card-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-icon {
+    background: none;
+    border: none;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+}
+
+.btn-icon:hover {
+    background-color: #f5f5f5;
+    color: #1e3a5f;
+}
+
+.btn-icon-danger:hover {
+    background-color: #fee2e2;
+    color: #ef4444;
+}
+
+.projeto-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.projeto-info-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 14px;
+    color: #4b5563;
+    line-height: 1.5;
+}
+
+.projeto-info-item i {
+    color: #e91e63;
+    width: 20px;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.projeto-info-item span {
+    flex: 1;
+}
+
+.projeto-descricao {
+    color: #6b7280;
+    font-style: italic;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .projetos-list-container {
+        grid-template-columns: 1fr;
+    }
+
+    .projetos-header {
+        flex-direction: column;
+    }
+}
+

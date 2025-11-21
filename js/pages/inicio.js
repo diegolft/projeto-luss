@@ -10,29 +10,14 @@ window.Pages.inicio = {
                         <h1>Controle Financeiro</h1>
                         <p>Gerencie suas finanças de forma simples e eficiente</p>
                     </div>
-                    <button id="open-session-modal-btn" class="btn btn-primary">
-                        <i class="fas fa-plus"></i> Nova Sessão
-                    </button>
                 </div>
 
                 <div class="finance-controls">
-                    <div class="session-selector">
-                        <h3>Sessões:</h3>
-                        <div class="session-buttons" id="sessions-container">
-                            <button class="btn-session active" id="session-geral" onclick="selectSession('geral')">Geral</button>
-                        </div>
-                    </div>
                     <div class="period-selector">
                         <button id="btn-mensal" class="active" onclick="changePeriod('mensal')">Mensal</button>
                         <button id="btn-semestral" onclick="changePeriod('semestral')">Semestral</button>
                         <button id="btn-anual" onclick="changePeriod('anual')">Anual</button>
                     </div>
-                </div>
-
-                <div id="session-info" class="session-info-bar">
-                    <span>Sessão atual: <strong id="current-session-name">Geral</strong></span>
-                    <button id="edit-session-btn" class="btn-text" onclick="editCurrentSession()">Editar</button>
-                    <button id="delete-session-btn" class="btn-text btn-danger" onclick="deleteCurrentSession()">Excluir</button>
                 </div>
 
                 <div class="summary-grid">
@@ -58,12 +43,6 @@ window.Pages.inicio = {
                         <div class="summary-text">
                             <p>Saldo</p>
                             <strong id="saldo-total">R$ 0,00</strong>
-                            <div id="budget-info" class="budget-tracker hidden">
-                                <small>Orçamento: <span id="budget-amount">R$ 0,00</span></small>
-                                <div class="progress-bar-container">
-                                    <div id="budget-progress" class="progress-bar"></div>
-                                </div>
-                            </div>
                         </div>
                         <div class="summary-icon icon-pink">
                             <i class="fas fa-wallet"></i>
@@ -100,33 +79,19 @@ window.Pages.inicio = {
                 </div>
             </div>
 
-            <!-- Modal de Sessão -->
-            <div id="session-modal" class="modal-backdrop hidden">
+            <!-- Modal de Detalhes da Transação -->
+            <div id="transaction-details-modal" class="modal-backdrop hidden">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h3 id="session-modal-title">Nova Sessão</h3>
-                        <button id="close-session-modal-btn" class="modal-close-btn">×</button>
+                        <h3>Detalhes da Transação</h3>
+                        <button id="close-details-modal-btn" class="modal-close-btn">×</button>
                     </div>
-                    <form id="session-form">
-                        <div class="modal-body">
-                            <div class="form-group">
-                                <label for="session-name">Nome da Sessão</label>
-                                <input type="text" id="session-name" required placeholder="Ex: Casamento, Viagem, Festa de Aniversário...">
-                            </div>
-                            <div class="form-group">
-                                <label for="session-description">Descrição (opcional)</label>
-                                <textarea id="session-description" rows="3" placeholder="Descreva o propósito desta sessão..."></textarea>
-                            </div>
-                            <div class="form-group">
-                                <label for="session-budget">Orçamento Previsto (opcional)</label>
-                                <input type="number" id="session-budget" step="0.01" placeholder="0,00">
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" id="cancel-session-btn" class="btn btn-outline">Cancelar</button>
-                            <button type="submit" id="save-session-btn" class="btn btn-primary">Criar Sessão</button>
-                        </div>
-                    </form>
+                    <div class="modal-body" id="transaction-details-content">
+                        <!-- Conteúdo será preenchido dinamicamente -->
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" id="close-details-btn" class="btn btn-primary">Fechar</button>
+                    </div>
                 </div>
             </div>
 
@@ -140,68 +105,55 @@ window.Pages.inicio = {
                     <form id="transaction-form">
                         <div class="modal-body">
                             <div class="form-group">
-                                <label for="tipo">Tipo</label>
-                                <select id="tipo">
+                                <label for="titulo">Título *</label>
+                                <input type="text" id="titulo" required placeholder="Ex: Doação de João Silva">
+                            </div>
+                            <div class="form-group">
+                                <label for="tipo">Tipo *</label>
+                                <select id="tipo" required>
                                     <option value="entrada">Entrada</option>
                                     <option value="saida">Saída</option>
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label for="descricao">Descrição</label>
-                                <input type="text" id="descricao" required placeholder="Ex: Salário, Aluguel, Compras...">
+                                <label for="doador">Doador</label>
+                                <select id="doador">
+                                    <option value="">Selecione um doador (opcional)</option>
+                                </select>
                             </div>
                             <div class="form-group">
-                                <label for="categoria">Categoria</label>
-                                <input type="text" id="categoria" required placeholder="Ex: Trabalho, Moradia, Alimentação...">
+                                <label for="beneficiario">Beneficiário</label>
+                                <select id="beneficiario">
+                                    <option value="">Selecione um beneficiário (opcional)</option>
+                                </select>
                             </div>
                             <div class="form-group">
-                                <label for="valor">Valor</label>
+                                <label for="categoria">Categoria *</label>
+                                <select id="categoria" required>
+                                    <option value="">Selecione uma categoria</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="projeto">Projeto</label>
+                                <select id="projeto">
+                                    <option value="">Selecione um projeto (opcional)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="valor">Valor *</label>
                                 <input type="number" id="valor" step="0.01" required placeholder="0,00">
                             </div>
                             <div class="form-group">
-                                <label for="instituicao">Instituição Financeira</label>
-                                <select id="instituicao">
-                                    <option value="">Selecione uma instituição</option>
-                                    <option value="Nubank">Nubank</option>
-                                    <option value="Banco do Brasil">Banco do Brasil</option>
-                                    <option value="Itaú">Itaú</option>
-                                    <option value="Bradesco">Bradesco</option>
-                                    <option value="Santander">Santander</option>
-                                    <option value="Caixa Econômica">Caixa Econômica</option>
-                                    <option value="Inter">Inter</option>
-                                    <option value="C6 Bank">C6 Bank</option>
-                                    <option value="PicPay">PicPay</option>
-                                    <option value="Dinheiro">Dinheiro</option>
-                                    <option value="Outro">Outro</option>
-                                </select>
+                                <label for="descricao">Descrição</label>
+                                <textarea id="descricao" rows="3" placeholder="Descrição adicional da transação..."></textarea>
                             </div>
                             <div class="form-group">
-                                <label for="metodo">Método de Pagamento</label>
-                                <select id="metodo">
-                                    <option value="">Selecione um método</option>
-                                    <option value="Cartão de Débito">Cartão de Débito</option>
-                                    <option value="Cartão de Crédito">Cartão de Crédito</option>
-                                    <option value="PIX">PIX</option>
-                                    <option value="TED/DOC">TED/DOC</option>
-                                    <option value="Boleto">Boleto</option>
-                                    <option value="Dinheiro">Dinheiro</option>
-                                    <option value="Depósito">Depósito</option>
-                                    <option value="Transferência">Transferência</option>
-                                </select>
-                            </div>
-                            <div class="form-grid">
-                                <div class="form-group">
-                                    <label for="data">Data</label>
-                                    <input type="date" id="data" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="hora">Hora</label>
-                                    <input type="time" id="hora">
-                                </div>
+                                <label for="data">Data *</label>
+                                <input type="date" id="data" required>
                             </div>
                             <div class="form-attachments">
                                 <div class="attachments-header">
-                                    <label>Anexos (Notas Fiscais)</label>
+                                    <label>Anexos</label>
                                     <button type="button" id="add-attachment-btn" class="btn-text">+ Adicionar Anexo</button>
                                 </div>
                                 <div id="attachments-container" class="attachments-list"></div>
